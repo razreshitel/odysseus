@@ -26,6 +26,13 @@ class WebSearchTool:
                 pass
         if not query:
             query = raw.split("\n")[0].strip()
+        # Strip an inline parameter key the model sometimes prepends
+        # (`query: "…"` / `query=…`) plus wrapping quotes, so it doesn't pollute
+        # the search terms.
+        _qlow = query.lower()
+        if _qlow.startswith("query=") or _qlow.startswith("query:"):
+            query = query[6:].strip()
+        query = query.strip().strip('"\'`')
         if time_filter is None:
             q_lc = query.lower()
             if any(kw in q_lc for kw in ("today", "latest", "breaking", "this morning", "right now", "currently")):
@@ -91,6 +98,14 @@ class WebFetchTool:
                 url = ""
         if not url:
             url = raw.split("\n")[0].strip()
+        # Models often write the parameter key inline: `url=https://…` or
+        # `url: https://…`. Strip that prefix (and any wrapping quotes/brackets)
+        # so it doesn't get mistaken for part of the URL and prefixed with
+        # https:// into an invalid address.
+        _ulow = url.lower()
+        if _ulow.startswith("url=") or _ulow.startswith("url:"):
+            url = url[4:].strip()
+        url = url.strip().strip('<>"\'`')
         if not url or url.startswith("{") or any(c in url for c in (" ", "\t", "\n")):
             return {"error": "web_fetch: provide a single URL or domain, e.g. example.com", "exit_code": 1}
         low = url.lower()
