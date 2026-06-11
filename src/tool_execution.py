@@ -150,6 +150,16 @@ def _resolve_tool_path(raw_path: str) -> str:
     if raw_path is None or not str(raw_path).strip():
         raise ValueError("path is required")
     expanded = os.path.expanduser(str(raw_path).strip())
+    # Resolve a RELATIVE path against the agent's workspace (DATA_DIR) — the same
+    # cwd its bash/ls see — so "current directory" means the same thing to
+    # write_file as it does in the shell. Without this, a relative path resolves
+    # against the server process cwd (project root), which is NOT on the
+    # allowlist, so the model gets "outside allowed roots" for a name its own
+    # `ls` just showed as local. The allowlist check below still applies, so
+    # `../../etc/passwd` is still rejected after realpath collapses the `..`.
+    if not os.path.isabs(expanded):
+        from src.constants import DATA_DIR
+        expanded = os.path.join(DATA_DIR, expanded)
     resolved = os.path.realpath(expanded)
 
     if _is_sensitive_path(resolved):
@@ -167,8 +177,14 @@ def _resolve_tool_path(raw_path: str) -> str:
             continue
         if common == root:
             return resolved
+    _roots = _tool_path_roots()
+    _name = os.path.basename(str(raw_path).strip()) or "file.md"
+    _example = os.path.join(_roots[0], _name) if _roots else f"/tmp/{_name}"
     raise ValueError(
-        f"path '{raw_path}' is outside the allowed roots"
+        f"path '{raw_path}' is outside the allowed roots. "
+        f"Allowed roots: {', '.join(_roots) if _roots else '(none configured)'}. "
+        f"Use a path under one of them — e.g. {_example}. "
+        f"A bare filename like '{_name}' also works now; it lands in the workspace ({_roots[0] if _roots else '/tmp'})."
     )
 
 
@@ -725,7 +741,7 @@ async def execute_tool_block(
                 "error": (
                     f"`{_first_tok}` is a TOOL, not a shell command — don't run it inside "
                     f"a ```{tool} block. Call it as its own fenced block, e.g.:\n"
-                    "```write_file\n/abs/path/to/file.md\n<file contents here>\n```\n"
+                    "```write_file\nreport.md\n<file contents here>\n```\n"
                     "(first line = absolute path, everything after = the file body)."),
                 "exit_code": 1,
             })
@@ -764,7 +780,7 @@ async def execute_tool_block(
                 "error": (
                     "write_file needs the path on the FIRST line and the file body on the "
                     "following lines, all inside one ```write_file block:\n"
-                    "```write_file\n/abs/path/to/file.md\n# Title\n\nbody...\n```\n"
+                    "```write_file\nreport.md\n# Title\n\nbody...\n```\n"
                     "Use an absolute path. For a document the user should see in the UI, "
                     "prefer ```create_document."),
                 "exit_code": 1,
