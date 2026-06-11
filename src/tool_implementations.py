@@ -22,6 +22,29 @@ logger = logging.getLogger(__name__)
 # Argument parsing
 # ---------------------------------------------------------------------------
 
+def _parse_kv_args(content: str) -> dict:
+    """Best-effort parse of `key=value` / `key: value` argument blobs that
+    weaker models emit instead of JSON. Pairs may be separated by spaces or
+    newlines; values may be quoted. Returns {} if nothing parseable, so callers
+    can fall back to their normal 'invalid JSON' error."""
+    import re as _re
+    s = (content or "").strip()
+    if not s or ("=" not in s and ":" not in s):
+        return {}
+    pat = _re.compile(
+        r'([A-Za-z_]\w*)\s*[=:]\s*'
+        r'("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|[^\n]*?)'
+        r'(?=\s+[A-Za-z_]\w*\s*[=:]|\s*\n|\s*$)'
+    )
+    out = {}
+    for m in pat.finditer(s):
+        k = m.group(1).strip()
+        v = m.group(2).strip().strip('"\'')
+        if k and k not in out:
+            out[k] = v
+    return out
+
+
 def _parse_tool_args(content):
     """Parse a tool-call argument blob.
 
@@ -36,7 +59,15 @@ def _parse_tool_args(content):
         try:
             args = json.loads(content) if content.strip() else {}
         except (json.JSONDecodeError, TypeError) as e:
-            raise ValueError(str(e))
+            # Fallback: weaker models emit `action=view name=foo` or
+            # `action: view\nname: bar` instead of JSON. Parse those key/value
+            # blobs so the call doesn't hard-fail (which sent the model into a
+            # retry loop). Only used when JSON parsing failed.
+            kv = _parse_kv_args(content)
+            if kv:
+                args = kv
+            else:
+                raise ValueError(str(e))
     elif isinstance(content, dict):
         args = content
     else:
