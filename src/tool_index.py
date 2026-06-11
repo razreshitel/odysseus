@@ -42,6 +42,17 @@ ALWAYS_AVAILABLE = frozenset({
     "ask_user",
     # Write back to the active plan (tick steps done / revise) during execution.
     "update_plan",
+    # ── Core execution / IO / web tools ───────────────────────────────────
+    # These are an agent's bread and butter — needed in virtually every task.
+    # Relevance filtering used to drop them on a vague follow-up ("i need the
+    # graph" → low_signal → ONLY the always-set was offered), which stripped
+    # their format docs from the prompt and made the model "forget how to run
+    # bash" or mangle web_fetch/web_search syntax. Pinning them here keeps
+    # their invocation format in context every round. Execution is still gated
+    # by disabled_tools + tool_policy, so this only affects visibility.
+    "bash", "python",
+    "web_search", "web_fetch",
+    "read_file", "write_file", "edit_file",
 })
 
 # Tools that the Personal Assistant always has access to during scheduled
