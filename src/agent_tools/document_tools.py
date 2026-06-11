@@ -697,3 +697,35 @@ class ManageDocumentTool:
             return {"error": str(e), "exit_code": 1}
         finally:
             db.close()
+
+class DiagramTool:
+    """Create a rendered diagram document from Mermaid source.
+
+    Both chat and the editor panel already render ```mermaid blocks (see
+    markdownModule.renderMermaid), so this is a thin wrapper: it wraps the
+    model's Mermaid in a markdown document and delegates to CreateDocumentTool.
+    No server-side rendering, no extra dependencies. The model is good at
+    writing Mermaid (flowcharts, sequence, ER, gantt, pie, xychart), which is
+    exactly the division of labor we want: model writes the spec, the renderer
+    draws it.
+    """
+
+    async def execute(self, content: str, ctx: dict) -> Dict:
+        raw = (content or "").strip()
+        if not raw:
+            return {"error": "create_diagram needs Mermaid diagram source (e.g. a `flowchart TD` block)"}
+        # Optional first line "title: ..." sets the document title.
+        title = "Diagram"
+        body = raw
+        first, _, rest = raw.partition("\n")
+        if first.lower().startswith("title:"):
+            title = first.split(":", 1)[1].strip() or "Diagram"
+            body = rest.strip()
+        # Tolerate the model wrapping its own ```mermaid fence — strip it so we
+        # don't double-fence.
+        body = re.sub(r"^```(?:mermaid)?\s*\n?", "", body.strip())
+        body = re.sub(r"\n?```$", "", body).strip()
+        if not body:
+            return {"error": "create_diagram: no Mermaid source after the title line"}
+        doc = f"{title}\nmarkdown\n```mermaid\n{body}\n```\n"
+        return await CreateDocumentTool().execute(doc, ctx)
