@@ -2431,6 +2431,14 @@ async def stream_agent_loop(
             tc.get("name") in ("create_document", "update_document")
             for tc in native_tool_calls
         )
+        # Track whether this round's ONLY action is an auto-extracted document.
+        # That is a side effect of the model's final prose answer — NOT a reason
+        # to keep the agent loop running. Without ending the turn here, a model
+        # that re-emits the same ```chart/```json/```code block every round (and
+        # writes prose, so the stall-detector sees "progress") loops until the
+        # round cap. See the auto-doc-only break after tool execution below.
+        _auto_doc_only_round = False
+        _blocks_before_autodoc = len(tool_blocks)
         if not has_doc_tool and session_id and "create_document" not in (disabled_tools or set()):
             _code_block_re = re.compile(r'```(\w*)\n([\s\S]*?)```')
             # Scan only the text WITHOUT executed tool blocks — the naive regex
@@ -2464,6 +2472,12 @@ async def stream_agent_loop(
                         doc_lang = "markdown"
                 tb = ToolBlock("create_document", f"{doc_title}\n{doc_lang}\n{code_body}")
                 tool_blocks.append(tb)
+                # If the model emitted NO real tool calls this round (just prose
+                # + this code block), the auto-doc is a pure side effect — mark
+                # the round so we end the turn after creating it instead of
+                # re-prompting (which would loop on the same block forever).
+                if _blocks_before_autodoc == 0:
+                    _auto_doc_only_round = True
                 # Stream the document open event
                 yield f'data: {json.dumps({"type": "doc_stream_open", "title": doc_title, "language": doc_lang})}\n\n'
                 yield f'data: {json.dumps({"type": "doc_stream_delta", "content": code_body})}\n\n'
@@ -2954,6 +2968,13 @@ async def stream_agent_loop(
                     break
             except Exception as _hook_err:
                 logger.debug(f"on_round_end hook failed (non-fatal): {_hook_err}")
+
+        # The model gave its final answer and we surfaced an auto-extracted
+        # document as a side effect — the turn is done. End cleanly (not via the
+        # exhaustion `else`) so we don't re-prompt and loop on the same block.
+        if _auto_doc_only_round:
+            logger.info("[agent] round %d: final answer + auto-created document — ending turn (no re-prompt)", round_num)
+            break
 
         # Emit agent_step event
         yield (
