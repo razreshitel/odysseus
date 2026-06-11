@@ -270,7 +270,7 @@ _DOMAIN_RULES = {
 
 _DOMAIN_TOOL_MAP = {
     "web": {"web_search", "web_fetch", "trigger_research", "manage_research"},
-    "documents": {"create_document", "edit_document", "update_document", "suggest_document", "manage_documents", "create_diagram", "export_document"},
+    "documents": {"create_document", "edit_document", "update_document", "suggest_document", "manage_documents", "export_document"},
     "email": {"list_email_accounts", "list_emails", "read_email", "send_email", "reply_to_email", "bulk_email", "archive_email", "delete_email", "mark_email_read", "resolve_contact", "manage_contact"},
     "cookbook": {"download_model", "serve_model", "serve_preset", "list_serve_presets", "list_served_models", "stop_served_model", "tail_serve_output", "list_downloads", "cancel_download", "search_hf_models", "list_cached_models", "list_cookbook_servers", "adopt_served_model"},
     "notes_calendar_tasks": {"manage_notes", "manage_calendar", "manage_tasks"},
@@ -358,16 +358,6 @@ Edit an EXISTING file by exact string replacement. PREFER this over bash (sed/ec
 <content>
 ```
 Create a NEW document in the editor panel. Only use when the user explicitly asks for a new file/document. If a document is already open in the editor, the user's request "fix this", "add X", "change Y", etc. refers to THAT document — use edit_document, never create_document.""",
-
-    "create_diagram": """\
-```create_diagram
-title: Optional Title
-flowchart TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do thing]
-    B -->|No| D[Stop]
-```
-Render a diagram from Mermaid source. Use for any diagram/flowchart/chart/graph request. First line may be `title: ...`; the rest is Mermaid (flowchart, sequenceDiagram, erDiagram, stateDiagram, gantt, pie, xychart-beta, mindmap). It renders in the editor panel. Write valid Mermaid — keep node labels simple.""",
 
     "export_document": """\
 ```export_document

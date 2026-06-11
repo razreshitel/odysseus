@@ -10,11 +10,6 @@ const ICONS = {
     '<polyline points="6 15 6 9 9 12 12 9 12 15"/>' +
     '<polyline points="16 9 16 15 13 12"/>' +
     '<polyline points="16 15 19 12 16 9"/>',
-  // Mermaid / diagram — two flowchart nodes joined by an elbow connector
-  mermaid:
-    '<rect x="3" y="3" width="9" height="5.5" rx="1"/>' +
-    '<rect x="12" y="15.5" width="9" height="5.5" rx="1"/>' +
-    '<path d="M7.5 8.5 V12.5 H16.5 V15.5"/>',
   // CSV — bold 3-column spreadsheet
   csv:
     '<rect x="3" y="4" width="18" height="16" rx="1.5"/>' +
@@ -167,8 +162,6 @@ const ALIASES = {
   rb: 'ruby',
   toml: 'yaml',
   ini: 'yaml',
-  diagram: 'mermaid',
-  mmd: 'mermaid',
 };
 
 /**

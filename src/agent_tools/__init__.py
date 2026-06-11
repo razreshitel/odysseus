@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 from .subprocess_tools import BashTool, PythonTool
 from .web_tools import WebSearchTool, WebFetchTool
 from .filesystem_tools import ReadFileTool, WriteFileTool, EditFileTool, LsTool, GlobTool, GrepTool
-from .document_tools import CreateDocumentTool, UpdateDocumentTool, EditDocumentTool, SuggestDocumentTool, ManageDocumentTool, DiagramTool
+from .document_tools import CreateDocumentTool, UpdateDocumentTool, EditDocumentTool, SuggestDocumentTool, ManageDocumentTool
 from .export_tools import ExportDocumentTool
 
 TOOL_HANDLERS = {
@@ -40,7 +40,6 @@ TOOL_HANDLERS = {
     "edit_document": EditDocumentTool().execute,
     "suggest_document": SuggestDocumentTool().execute,
     "manage_documents": ManageDocumentTool().execute,
-    "create_diagram": DiagramTool().execute,
     "export_document": ExportDocumentTool().execute,
 }
 
@@ -55,7 +54,7 @@ PYTHON_TIMEOUT = 30
 # Tool types that trigger execution
 TOOL_TAGS = {"bash", "python", "web_search", "web_fetch", "read_file", "write_file", "edit_file",
              "grep", "glob", "ls",
-             "create_document", "update_document", "edit_document", "create_diagram", "export_document",
+             "create_document", "update_document", "edit_document", "export_document",
              "search_chats",
              "chat_with_model", "create_session", "list_sessions",
              "send_to_session",

@@ -2112,7 +2112,7 @@ import * as Modals from './modalManager.js';
     // The markdown Edit/Preview toggle is a two-icon switch; other modes use
     // the single dynamic preview button.
     const mdToggle = document.getElementById('doc-md-view-toggle');
-    if (mdToggle) mdToggle.style.display = (lang === 'markdown' || lang === 'mermaid') ? 'inline-flex' : 'none';
+    if (mdToggle) mdToggle.style.display = (lang === 'markdown') ? 'inline-flex' : 'none';
     const renderToggle = document.getElementById('doc-render-view-toggle');
     if (renderToggle) {
       renderToggle.style.display = _hasViewToggle(lang) ? 'inline-flex' : 'none';
@@ -3830,7 +3830,6 @@ import * as Modals from './modalManager.js';
           <option value="html">html</option>
           <option value="css">css</option>
           <option value="markdown">markdown</option>
-          <option value="mermaid">diagram</option>
           <option value="json">json</option>
           <option value="yaml">yaml</option>
           <option value="bash">bash</option>
@@ -8592,12 +8591,7 @@ import * as Modals from './modalManager.js';
     if (!preview || !wrap || !textarea) return;
 
     if (active) {
-      let md = textarea.value || '';
-      // A "diagram" document holds raw Mermaid (no fence). Wrap it so the
-      // markdown renderer + renderMermaid below draw it as a diagram.
-      if (docs.get(activeDocId)?.language === 'mermaid' && !/```mermaid/.test(md)) {
-        md = '```mermaid\n' + md.trim() + '\n```';
-      }
+      const md = textarea.value || '';
       if (markdownModule && markdownModule.mdToHtml) {
         preview.innerHTML = markdownModule.mdToHtml(md, { shortcodes: false }); // doc preview: keep :shortcodes: literal
       } else {
