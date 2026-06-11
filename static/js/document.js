@@ -2112,7 +2112,7 @@ import * as Modals from './modalManager.js';
     // The markdown Edit/Preview toggle is a two-icon switch; other modes use
     // the single dynamic preview button.
     const mdToggle = document.getElementById('doc-md-view-toggle');
-    if (mdToggle) mdToggle.style.display = (lang === 'markdown') ? 'inline-flex' : 'none';
+    if (mdToggle) mdToggle.style.display = (lang === 'markdown' || lang === 'mermaid') ? 'inline-flex' : 'none';
     const renderToggle = document.getElementById('doc-render-view-toggle');
     if (renderToggle) {
       renderToggle.style.display = _hasViewToggle(lang) ? 'inline-flex' : 'none';
@@ -3830,6 +3830,7 @@ import * as Modals from './modalManager.js';
           <option value="html">html</option>
           <option value="css">css</option>
           <option value="markdown">markdown</option>
+          <option value="mermaid">diagram</option>
           <option value="json">json</option>
           <option value="yaml">yaml</option>
           <option value="bash">bash</option>
@@ -8349,6 +8350,8 @@ import * as Modals from './modalManager.js';
       { label: 'Export Markdown', fn: exportDocument },
       { label: 'Print as PDF', fn: exportAsPdf },
       { label: 'Export as Word', fn: exportAsDocx },
+      { label: 'Export as Excel', fn: () => exportOffice('xlsx') },
+      { label: 'Export as PowerPoint', fn: () => exportOffice('pptx') },
     );
 
     options.forEach(opt => {
@@ -8496,6 +8499,38 @@ import * as Modals from './modalManager.js';
     if (uiModule) uiModule.showToast('Exported as DOCX');
   }
 
+  /** Export the active document to a real Office file via the backend (which
+   *  reuses the agent-side renderers: markdown tables -> Excel sheets, `#`
+   *  headings -> PowerPoint slides, headings/tables -> Word). */
+  async function exportOffice(format) {
+    if (!activeDocId) return;
+    const textarea = document.getElementById('doc-editor-textarea');
+    const content = (textarea && textarea.value) || docs.get(activeDocId)?.content || '';
+    if (!content.trim()) { if (uiModule) uiModule.showError('Nothing to export'); return; }
+    const title = docs.get(activeDocId)?.title || 'export';
+    try {
+      const res = await fetch(`${API_BASE}/api/document/export-office`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ content, title, format }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'export failed');
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="?([^"]+)"?/);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = m ? m[1] : (title.replace(/[^a-zA-Z0-9_\-. ]/g, '_') + '.' + format);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (uiModule) uiModule.showToast(`Exported as ${format.toUpperCase()}`);
+    } catch (e) {
+      console.error('Office export failed:', e);
+      if (uiModule) uiModule.showError('Export failed: ' + e.message);
+    }
+  }
+
   /** Delete the active document */
   async function deleteActiveDocument() {
     if (!activeDocId) return;
@@ -8557,7 +8592,12 @@ import * as Modals from './modalManager.js';
     if (!preview || !wrap || !textarea) return;
 
     if (active) {
-      const md = textarea.value || '';
+      let md = textarea.value || '';
+      // A "diagram" document holds raw Mermaid (no fence). Wrap it so the
+      // markdown renderer + renderMermaid below draw it as a diagram.
+      if (docs.get(activeDocId)?.language === 'mermaid' && !/```mermaid/.test(md)) {
+        md = '```mermaid\n' + md.trim() + '\n```';
+      }
       if (markdownModule && markdownModule.mdToHtml) {
         preview.innerHTML = markdownModule.mdToHtml(md, { shortcodes: false }); // doc preview: keep :shortcodes: literal
       } else {

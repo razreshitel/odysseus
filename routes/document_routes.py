@@ -157,6 +157,46 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         finally:
             db.close()
 
+    # ---- POST /api/document/export-office ----
+    # Render markdown (or the active doc's content) to a real Office file and
+    # stream it back as a download. Reuses the agent-side renderers in
+    # src.agent_tools.export_tools so the UI and the export_document tool stay
+    # in lockstep. Office libs are pure-Python (python-docx/pptx/openpyxl).
+    @router.post("/api/document/export-office")
+    async def export_office(request: Request, req: Dict[str, Any]) -> Any:
+        from fastapi import Response
+        from src.auth_helpers import require_privilege
+        require_privilege(request, "can_use_documents")
+        import io
+        from src.agent_tools.export_tools import (
+            _normalize_format, _RENDERERS, _EXT, _slug,
+        )
+        fmt = _normalize_format(str(req.get("format", "")))
+        if fmt not in _RENDERERS:
+            raise HTTPException(400, "format must be one of: docx, xlsx, pptx")
+        content = str(req.get("content") or "")
+        title = str(req.get("title") or "export").strip() or "export"
+        if not content.strip():
+            raise HTTPException(400, "no content to export")
+        buf = io.BytesIO()
+        try:
+            _RENDERERS[fmt](content, title, buf)
+        except ImportError:
+            raise HTTPException(503, f"{fmt} export library not installed on the server")
+        except Exception as e:
+            logger.warning(f"export-office failed: {e}")
+            raise HTTPException(500, f"export failed: {e}")
+        media = {
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        }[fmt]
+        filename = _slug(title) + _EXT[fmt]
+        return Response(
+            content=buf.getvalue(), media_type=media,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     # ---- POST /api/documents/import-pdf ----
     @router.post("/api/documents/import-pdf")
     async def import_pdf(
