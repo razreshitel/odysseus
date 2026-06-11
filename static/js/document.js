@@ -307,6 +307,16 @@ import * as Modals from './modalManager.js';
       rightBtn.addEventListener('click', () => scrollArea.scrollBy({ left: 120, behavior: 'smooth' }));
       updateArrowVisibility(scrollArea, leftBtn, rightBtn);
       scrollArea.addEventListener('scroll', () => updateArrowVisibility(scrollArea, leftBtn, rightBtn));
+      // Mouse wheel over the tab strip scrolls it horizontally — a vertical
+      // wheel doesn't move a horizontal list on its own. Only intercept when
+      // there's overflow to scroll, and let a genuine horizontal wheel
+      // (trackpad two-finger swipe) pass through untouched.
+      scrollArea.addEventListener('wheel', (e) => {
+        if (scrollArea.scrollWidth <= scrollArea.clientWidth) return;
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+        e.preventDefault();
+        scrollArea.scrollBy({ left: e.deltaY, behavior: 'auto' });
+      }, { passive: false });
     }
 
     // Mobile: the tab bar doubles as a drag zone — swipe down to dismiss.
