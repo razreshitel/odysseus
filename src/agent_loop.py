@@ -270,7 +270,7 @@ _DOMAIN_RULES = {
 
 _DOMAIN_TOOL_MAP = {
     "web": {"web_search", "web_fetch", "trigger_research", "manage_research"},
-    "documents": {"create_document", "edit_document", "update_document", "suggest_document", "manage_documents", "create_diagram"},
+    "documents": {"create_document", "edit_document", "update_document", "suggest_document", "manage_documents", "create_diagram", "export_document"},
     "email": {"list_email_accounts", "list_emails", "read_email", "send_email", "reply_to_email", "bulk_email", "archive_email", "delete_email", "mark_email_read", "resolve_contact", "manage_contact"},
     "cookbook": {"download_model", "serve_model", "serve_preset", "list_serve_presets", "list_served_models", "stop_served_model", "tail_serve_output", "list_downloads", "cancel_download", "search_hf_models", "list_cached_models", "list_cookbook_servers", "adopt_served_model"},
     "notes_calendar_tasks": {"manage_notes", "manage_calendar", "manage_tasks"},
@@ -368,6 +368,21 @@ flowchart TD
     B -->|No| D[Stop]
 ```
 Render a diagram from Mermaid source. Use for any diagram/flowchart/chart/graph request. First line may be `title: ...`; the rest is Mermaid (flowchart, sequenceDiagram, erDiagram, stateDiagram, gantt, pie, xychart-beta, mindmap). It renders in the editor panel. Write valid Mermaid — keep node labels simple.""",
+
+    "export_document": """\
+```export_document
+format: docx
+title: My Report
+# Heading
+
+Some text, **bold**, a bullet:
+- point one
+
+| Col A | Col B |
+| --- | --- |
+| 1 | 2 |
+```
+Export to a real Office file — `format:` is docx (Word), xlsx (Excel), or pptx (PowerPoint). ONLY use when the user explicitly asks for one of those formats; otherwise write markdown with create_document. You provide markdown (headings, tables, bullets, code); it renders the binary file and reports the path. For xlsx, markdown tables become sheets; for pptx, `#` headings become slides.""",
 
     "edit_document": """\
 ```edit_document

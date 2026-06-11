@@ -79,6 +79,7 @@ BUILTIN_TOOL_DESCRIPTIONS: Dict[str, str] = {
     "edit_file": "Edit an existing file ON DISK by exact string replacement (fix a bug, change a function). Shows a diff. The tool for changing files on disk — NOT edit_document (editor panel) and NOT bash sed/heredoc.",
     "create_document": "Create a new document in the editor panel. For code, articles, text content longer than 15 lines, unless an already-open document/email draft is the obvious target. If an email compose draft is open, edit that draft instead of creating another document.",
     "create_diagram": "Render a diagram from Mermaid source — flowcharts, sequence/ER/state diagrams, gantt charts, pie or xy charts. Use when the user asks for a diagram, flowchart, chart, graph, or visual; you write the Mermaid spec and it renders in the panel. For plain prose/code use create_document instead.",
+    "export_document": "Export content to a real Office file: docx (Word), xlsx (Excel), or pptx (PowerPoint). Use ONLY when the user explicitly asks for one of those formats (word, doc, excel, xls/xlsx/xsl/spreadsheet, powerpoint/ppt/slides/deck). For everything else keep using markdown via create_document — do NOT reach for this by default. You write markdown (headings, tables, bullets); it renders the binary file.",
     "edit_document": "Preferred tool for editing an existing document — targeted find-and-replace. Use for any small change: add a function, fix a bug, tweak a section, rename things.",
     "update_document": "Replace the entire active document content. ONLY for full rewrites (>50% changed). Do not use for small edits — use edit_document instead.",
     "suggest_document": "Suggest changes to the active document with explanations. For code review, proofreading, feedback requests.",
@@ -478,6 +479,11 @@ class ToolIndex:
                    "sequence diagram", "mindmap", "mind map", "gantt",
                    "er diagram", "visualize", "visualise"}):
             {"create_diagram"},
+        # Explicit Office-format export intent (incl. common misspellings)
+        frozenset({"word", "docx", ".docx", "excel", "exel", "xlsx", "xls", "xsl",
+                   "spreadsheet", "powerpoint", "power point", "pptx", "ppt",
+                   "slides", "deck", "presentation", "export to"}):
+            {"export_document"},
     }
 
     def get_tools_for_query(

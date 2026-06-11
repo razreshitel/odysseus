@@ -43,3 +43,10 @@ qrcode[pil]
 croniter
 pytest
 pytest-asyncio
+
+# Office document export for the export_document tool (Word/Excel/PowerPoint).
+# All pure-Python, no system libraries. Used only when the user explicitly asks
+# for a non-markdown format; the tool degrades to an error if ever missing.
+python-docx
+python-pptx
+openpyxl
