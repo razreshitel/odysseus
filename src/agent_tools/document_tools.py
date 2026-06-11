@@ -727,5 +727,8 @@ class DiagramTool:
         body = re.sub(r"\n?```$", "", body).strip()
         if not body:
             return {"error": "create_diagram: no Mermaid source after the title line"}
-        doc = f"{title}\nmarkdown\n```mermaid\n{body}\n```\n"
+        # language=mermaid (raw source, no fence): the panel renders it as a
+        # diagram and the tab shows the diagram icon. CreateDocumentTool parses
+        # line1=title, line2=language, rest=content.
+        doc = f"{title}\nmermaid\n{body}\n"
         return await CreateDocumentTool().execute(doc, ctx)

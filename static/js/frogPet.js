@@ -184,6 +184,11 @@
     onStream(json, thinking) {
       if (!root) build();
       clearTimeout(happyTimer);
+      // A command/tool that failed (non-zero exit) annoys the frog too.
+      if (json.type === 'tool_output' && json.exit_code != null && json.exit_code !== 0) {
+        swear();
+        return;
+      }
       if (json.type === 'tool_start') {
         thinkOpen = false;
         setMood('typing');
